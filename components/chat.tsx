@@ -238,6 +238,12 @@ export function Chat({
           chatId={id}
           isReadonly={isReadonly}
           selectedVisibilityType={initialVisibilityType}
+          onSidebarToggle={() => {
+            // Close source sidebar when main sidebar is toggled on mobile
+            if (selectedMessageId) {
+              setSelectedMessageId(null);
+            }
+          }}
         />
 
         <Messages

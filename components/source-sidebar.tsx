@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLinkIcon } from "lucide-react";
+import { ExternalLinkIcon, XIcon } from "lucide-react";
+import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
 import { Badge } from "./ui/badge";
@@ -81,8 +82,27 @@ export function SourceSidebar({ metadata, isOpen, onClose }: SourceSidebarProps)
   }
 
   return (
-    <div className="fixed right-0 top-0 h-full w-80 border-l bg-background p-4 overflow-y-auto z-40 shadow-lg">
-      <div className="space-y-4">
+    <>
+      {/* Overlay for mobile */}
+      <div
+        className="fixed inset-0 bg-black/50 z-30 md:hidden"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      <div className="fixed right-0 top-0 h-full w-full md:w-80 border-l bg-background p-4 overflow-y-auto z-40 shadow-lg">
+        {/* Close button */}
+        <div className="flex justify-end mb-4">
+          <Button
+            className="h-8 w-8 p-0"
+            onClick={onClose}
+            variant="ghost"
+            type="button"
+          >
+            <XIcon className="h-4 w-4" />
+            <span className="sr-only">Lukk kilder og sikkerhet</span>
+          </Button>
+        </div>
+        <div className="space-y-4">
         {/* User Prompt */}
         {metadata.userPrompt && (
           <Card>
@@ -207,8 +227,9 @@ export function SourceSidebar({ metadata, isOpen, onClose }: SourceSidebarProps)
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

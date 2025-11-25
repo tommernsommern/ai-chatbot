@@ -26,12 +26,15 @@ export const myProvider = isTestEnvironment
   : customProvider({
       languageModels: {
         // Using OpenAI models - set OPENAI_API_KEY in .env.local
-        "chat-model": openai("gpt-5.1"),
+        // GPT-4o-mini: $0.15/$0.60 per million tokens (billigst med god kvalitet)
+        // GPT-3.5-turbo: $0.50/$1.50 per million tokens (billigere, lavere kvalitet)
+        // GPT-4o: $2.50/$10.00 per million tokens (best kvalitet, dyrere)
+        "chat-model": openai("gpt-4o-mini"),
         "chat-model-reasoning": wrapLanguageModel({
-          model: openai("gpt-5.1"),
+          model: openai("gpt-4o-mini"),
           middleware: extractReasoningMiddleware({ tagName: "think" }),
         }),
-        "title-model": openai("gpt-5.1"),
+        "title-model": openai("gpt-4o-mini"),
         "artifact-model": openai("gpt-4o"),
       },
     });

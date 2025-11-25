@@ -9,7 +9,7 @@ export type ChatModel = {
 export const chatModels: ChatModel[] = [
   {
     id: "chat-model",
-    name: "gpt-5.1",
-    description: "Avansert multimodal modell med visjon og tekstkapasitet",
+    name: "gpt-4o-mini",
+    description: "Kostnadseffektiv modell med god kvalitet ($0.15/$0.60 per million tokens)",
   },
 ];
