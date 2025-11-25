@@ -38,9 +38,11 @@ import { generateHashedPassword } from "./utils";
 // use the Drizzle adapter for Auth.js / NextAuth
 // https://authjs.dev/reference/adapter/drizzle
 
-// biome-ignore lint: Forbidden non-null assertion.
-const client = postgres(process.env.POSTGRES_URL!);
-const db = drizzle(client);
+// Initialize database client only if POSTGRES_URL is available
+const client = process.env.POSTGRES_URL
+  ? postgres(process.env.POSTGRES_URL)
+  : null;
+const db = client ? drizzle(client) : null;
 
 export async function getUser(email: string): Promise<User[]> {
   try {
@@ -231,6 +233,9 @@ export async function getChatsByUserId({
 }
 
 export async function getChatById({ id }: { id: string }) {
+  if (!db) {
+    return null;
+  }
   try {
     const [selectedChat] = await db.select().from(chat).where(eq(chat.id, id));
     if (!selectedChat) {
@@ -252,6 +257,9 @@ export async function saveMessages({ messages }: { messages: DBMessage[] }) {
 }
 
 export async function getMessagesByChatId({ id }: { id: string }) {
+  if (!db) {
+    return [];
+  }
   try {
     return await db
       .select()
