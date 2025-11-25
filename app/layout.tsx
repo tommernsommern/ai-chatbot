@@ -7,7 +7,7 @@ import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://chat.vercel.ai"),
+  metadataBase: new URL("https://faktasjekkeren.vercel.app"),
   title: "Faktasjekkern",
   description: "Faktasjekkern - AI-assistent for faktasjekking.",
   openGraph: {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "app/opengraph-image.png",
+        url: "/opengraph-image.png",
         width: 1200,
         height: 630,
         alt: "Faktasjekkern - AI-assistent for faktasjekking.",
@@ -27,6 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Faktasjekkern",
     description: "Faktasjekkern - AI-assistent for faktasjekking.",
+    images: ["/opengraph-image.png"],
   },
 };
 
