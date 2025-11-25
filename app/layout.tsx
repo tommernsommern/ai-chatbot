@@ -14,6 +14,14 @@ export const metadata: Metadata = {
     title: "Faktasjekkern",
     description: "Faktasjekkern - AI-assistent for faktasjekking.",
     type: "website",
+    images: [
+      {
+        url: "/app/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Faktasjekkern - AI-assistent for faktasjekking.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
