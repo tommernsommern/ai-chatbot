@@ -43,14 +43,14 @@ export function AppSidebar({ user }: { user: User | undefined }) {
     });
 
     toast.promise(deletePromise, {
-      loading: "Deleting all chats...",
+      loading: "Sletter alle samtaler...",
       success: () => {
         mutate(unstable_serialize(getChatHistoryPaginationKey));
         router.push("/");
         setShowDeleteAllDialog(false);
-        return "All chats deleted successfully";
+        return "Alle samtaler slettet";
       },
-      error: "Failed to delete all chats",
+      error: "Kunne ikke slette alle samtaler",
     });
   };
 
@@ -68,7 +68,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 }}
               >
                 <span className="cursor-pointer rounded-md px-2 font-semibold text-lg hover:bg-muted">
-                  Chatbot
+                  Faktasjekkern
                 </span>
               </Link>
               <div className="flex flex-row gap-1">
@@ -85,7 +85,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent align="end" className="hidden md:block">
-                      Delete All Chats
+                      Slett alle samtaler
                     </TooltipContent>
                   </Tooltip>
                 )}
@@ -104,9 +104,9 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       <PlusIcon />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent align="end" className="hidden md:block">
-                    New Chat
-                  </TooltipContent>
+                    <TooltipContent align="end" className="hidden md:block">
+                      Ny samtale
+                    </TooltipContent>
                 </Tooltip>
               </div>
             </div>
@@ -121,16 +121,16 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       <AlertDialog onOpenChange={setShowDeleteAllDialog} open={showDeleteAllDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete all chats?</AlertDialogTitle>
+            <AlertDialogTitle>Slette alle samtaler?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete all your
-              chats and remove them from our servers.
+              Denne handlingen kan ikke angres. Dette vil permanent slette alle dine
+              samtaler og fjerne dem fra våre servere.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Avbryt</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteAll}>
-              Delete All
+              Slett alle
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

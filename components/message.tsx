@@ -24,6 +24,9 @@ import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
+import { InfoIcon } from "lucide-react";
+import { Button } from "./ui/button";
+import { parseMetadataFromText, removeMetadataFromText } from "@/lib/utils/metadata-parser";
 
 const PurePreviewMessage = ({
   chatId,
@@ -34,6 +37,8 @@ const PurePreviewMessage = ({
   regenerate,
   isReadonly,
   requiresScrollPadding,
+  onClick,
+  isSelected,
 }: {
   chatId: string;
   message: ChatMessage;
@@ -43,12 +48,22 @@ const PurePreviewMessage = ({
   regenerate: UseChatHelpers<ChatMessage>["regenerate"];
   isReadonly: boolean;
   requiresScrollPadding: boolean;
+  onClick?: (messageId: string) => void;
+  isSelected?: boolean;
 }) => {
   const [mode, setMode] = useState<"view" | "edit">("view");
 
   const attachmentsFromMessage = message.parts.filter(
     (part) => part.type === "file"
   );
+
+  // Check if message has metadata
+  const hasMetadata = message.role === "assistant" && message.parts.some((part) => {
+    if (part.type === "text") {
+      return parseMetadataFromText(part.text) !== null;
+    }
+    return false;
+  });
 
   useDataStream();
 
@@ -115,7 +130,7 @@ const PurePreviewMessage = ({
                 <MessageReasoning
                   isLoading={isLoading}
                   key={key}
-                  reasoning={part.text}
+                  reasoning={removeMetadataFromText(part.text)}
                 />
               );
             }
@@ -138,7 +153,7 @@ const PurePreviewMessage = ({
                           : undefined
                       }
                     >
-                      <Response>{sanitizeText(part.text)}</Response>
+                      <Response>{sanitizeText(removeMetadataFromText(part.text))}</Response>
                     </MessageContent>
                   </div>
                 );
@@ -280,6 +295,23 @@ const PurePreviewMessage = ({
               vote={vote}
             />
           )}
+
+          {hasMetadata && onClick && message.role === "assistant" && (
+            <div className="mt-2 flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onClick(message.id)}
+                className={cn(
+                  "text-xs",
+                  isSelected && "bg-accent"
+                )}
+              >
+                <InfoIcon className="h-3 w-3 mr-1" />
+                Vis kilder og sikkerhet
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
@@ -329,7 +361,7 @@ export const ThinkingMessage = () => {
 
         <div className="flex w-full flex-col gap-2 md:gap-4">
           <div className="p-0 text-muted-foreground text-sm">
-            Thinking...
+            Tenker<span className="animate-pulse">...</span>
           </div>
         </div>
       </div>

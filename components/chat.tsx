@@ -24,12 +24,14 @@ import type { Vote } from "@/lib/db/schema";
 import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import type { AppUsage } from "@/lib/usage";
-import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
+import { cn, fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
+import { parseMetadataFromText, removeMetadataFromText } from "@/lib/utils/metadata-parser";
 import { Artifact } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
+import { SourceSidebar, type MessageMetadata } from "./source-sidebar";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
 
@@ -62,6 +64,8 @@ export function Chat({
   const [usage, setUsage] = useState<AppUsage | undefined>(initialLastContext);
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
   const [currentModelId, setCurrentModelId] = useState(initialChatModel);
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [messageMetadata, setMessageMetadata] = useState<Record<string, MessageMetadata>>({});
   const currentModelIdRef = useRef(currentModelId);
 
   useEffect(() => {
@@ -154,9 +158,82 @@ export function Chat({
     setMessages,
   });
 
+  // Parse metadata from assistant messages
+  useEffect(() => {
+    const newMetadata: Record<string, MessageMetadata> = {};
+    let latestMessageWithMetadata: string | null = null;
+    let firstMessageWithMetadata: string | null = null;
+    
+    messages.forEach((message) => {
+      if (message.role === "assistant") {
+        const textParts = message.parts
+          .filter((part) => part.type === "text")
+          .map((part) => part.text)
+          .join("");
+        
+        const metadata = parseMetadataFromText(textParts);
+        if (metadata) {
+          // Find the corresponding user message (the last user message before this assistant message)
+          const messageIndex = messages.indexOf(message);
+          let userMessageIndex = -1;
+          for (let i = messageIndex - 1; i >= 0; i--) {
+            if (messages[i].role === "user") {
+              userMessageIndex = i;
+              break;
+            }
+          }
+          
+          if (userMessageIndex !== -1) {
+            const userMessage = messages[userMessageIndex];
+            const userPrompt = userMessage.parts
+              .filter((part) => part.type === "text")
+              .map((part) => part.text)
+              .join("");
+            
+            newMetadata[message.id] = {
+              ...metadata,
+              userPrompt,
+            };
+          } else {
+            newMetadata[message.id] = metadata;
+          }
+          
+          // Track the first and latest message with metadata
+          if (!firstMessageWithMetadata) {
+            firstMessageWithMetadata = message.id;
+          }
+          latestMessageWithMetadata = message.id;
+        }
+      }
+    });
+    
+    setMessageMetadata(newMetadata);
+    
+    // Automatically open sidebar for the latest message with metadata
+    // Prioritize first message if sidebar is closed, otherwise use latest
+    if (latestMessageWithMetadata && newMetadata[latestMessageWithMetadata]) {
+      // If sidebar is closed, open for first message (if it exists) or latest
+      if (selectedMessageId === null) {
+        const messageToOpen = firstMessageWithMetadata || latestMessageWithMetadata;
+        setSelectedMessageId(messageToOpen);
+      } 
+      // If sidebar is open for a different message, update to latest
+      else if (selectedMessageId !== latestMessageWithMetadata) {
+        setSelectedMessageId(latestMessageWithMetadata);
+      }
+    }
+  }, [messages, selectedMessageId]);
+
+  const selectedMetadata = selectedMessageId
+    ? messageMetadata[selectedMessageId]
+    : null;
+
   return (
     <>
-      <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
+      <div className={cn(
+        "overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background relative",
+        selectedMessageId && selectedMetadata && "pr-80"
+      )}>
         <ChatHeader
           chatId={id}
           isReadonly={isReadonly}
@@ -173,6 +250,14 @@ export function Chat({
           setMessages={setMessages}
           status={status}
           votes={votes}
+          onMessageClick={(messageId) => {
+            if (messageMetadata[messageId]) {
+              setSelectedMessageId(
+                selectedMessageId === messageId ? null : messageId
+              );
+            }
+          }}
+          selectedMessageId={selectedMessageId}
         />
 
         <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
@@ -191,11 +276,16 @@ export function Chat({
               setMessages={setMessages}
               status={status}
               stop={stop}
-              usage={usage}
             />
           )}
         </div>
       </div>
+
+      <SourceSidebar
+        metadata={selectedMetadata}
+        isOpen={selectedMessageId !== null && selectedMetadata !== null}
+        onClose={() => setSelectedMessageId(null)}
+      />
 
       <Artifact
         attachments={attachments}

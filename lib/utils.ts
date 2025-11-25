@@ -94,7 +94,65 @@ export function getTrailingMessageId({
 }
 
 export function sanitizeText(text: string) {
-  return text.replace('<has_function_call>', '');
+  if (!text) return text;
+  
+  // Remove function call tags and metadata tags
+  let cleaned = text
+    .replace('<has_function_call>', '')
+    .replace(/<metadata>[\s\S]*?<\/metadata>/gi, '')
+    .replace(/<METADATA>[\s\S]*?<\/METADATA>/gi, '')
+    .replace(/<Metadata>[\s\S]*?<\/Metadata>/gi, '');
+  
+  // Remove any trust:score patterns
+  cleaned = cleaned.replace(/trust:score_[a-z]+/gi, '');
+  cleaned = cleaned.replace(/trust\s*:\s*score[_\s]*[a-z]+/gi, '');
+  
+  // Remove JSON objects that look like metadata (even without tags)
+  // This catches cases where AI outputs JSON directly in the response
+  try {
+    // Remove multiline JSON blocks with metadata structure
+    const metadataJsonPattern = /\{\s*"confidence"\s*:\s*\d+\s*,\s*"sources"\s*:[\s\S]*?\}/gs;
+    let prevCleaned = "";
+    let iterations = 0;
+    while (prevCleaned !== cleaned && iterations < 10) {
+      prevCleaned = cleaned;
+      cleaned = cleaned.replace(metadataJsonPattern, "");
+      iterations++;
+    }
+    
+    // Remove any JSON object with confidence field (simpler pattern)
+    const simpleJsonPattern = /\{\s*"confidence"\s*:\s*\d+[^}]*\}/gi;
+    cleaned = cleaned.replace(simpleJsonPattern, "");
+    
+    // Remove JSON at the end of text (common case)
+    const endJsonPattern = /\n\s*\{\s*"confidence"[\s\S]*?\}\s*$/s;
+    cleaned = cleaned.replace(endJsonPattern, "");
+    
+    // Remove nested JSON with confidence
+    const nestedJsonPattern = /\{[^{}]*(?:"confidence"|"sources"|"uncertainties")[^{}]*\}/gi;
+    iterations = 0;
+    while (prevCleaned !== cleaned && iterations < 10) {
+      prevCleaned = cleaned;
+      cleaned = cleaned.replace(nestedJsonPattern, "");
+      iterations++;
+    }
+    
+    // Remove JSON that appears after newlines
+    const newlineJsonPattern = /\n\s*\{\s*"confidence"[\s\S]*?\}\s*\n?/gs;
+    cleaned = cleaned.replace(newlineJsonPattern, "\n");
+    
+    // Remove indented JSON blocks
+    const indentedJsonPattern = /^\s*\{\s*"confidence"[\s\S]*?\}\s*$/gm;
+    cleaned = cleaned.replace(indentedJsonPattern, "");
+    
+    // Remove any remaining JSON-like patterns
+    const quoteJsonPattern = /"confidence"\s*:\s*\d+[^}]*"sources"[^}]*/gi;
+    cleaned = cleaned.replace(quoteJsonPattern, "");
+  } catch (e) {
+    // If regex fails, continue
+  }
+  
+  return cleaned.trim();
 }
 
 export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {

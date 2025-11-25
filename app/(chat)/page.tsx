@@ -7,11 +7,12 @@ import { generateUUID } from "@/lib/utils";
 import { auth } from "../(auth)/auth";
 
 export default async function Page() {
-  const session = await auth();
+  // Authentication disabled - show page directly
+  // const session = await auth();
 
-  if (!session) {
-    redirect("/api/auth/guest");
-  }
+  // if (!session) {
+  //   redirect("/api/auth/guest");
+  // }
 
   const id = generateUUID();
 

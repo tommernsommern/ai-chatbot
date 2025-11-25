@@ -26,6 +26,7 @@ import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { webSearch } from "@/lib/ai/tools/web-search";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
@@ -108,45 +109,47 @@ export async function POST(request: Request) {
       selectedVisibilityType: VisibilityType;
     } = requestBody;
 
-    const session = await auth();
+    // Authentication disabled - create a dummy session
+    // const session = await auth();
 
-    if (!session?.user) {
-      return new ChatSDKError("unauthorized:chat").toResponse();
-    }
+    // if (!session?.user) {
+    //   return new ChatSDKError("unauthorized:chat").toResponse();
+    // }
 
-    const userType: UserType = session.user.type;
+    // const userType: UserType = session.user.type;
 
-    const messageCount = await getMessageCountByUserId({
-      id: session.user.id,
-      differenceInHours: 24,
-    });
+    // const messageCount = await getMessageCountByUserId({
+    //   id: session.user.id,
+    //   differenceInHours: 24,
+    // });
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
-      return new ChatSDKError("rate_limit:chat").toResponse();
-    }
+    // if (messageCount > entitlementsByUserType[userType].maxMessagesPerDay) {
+    //   return new ChatSDKError("rate_limit:chat").toResponse();
+    // }
 
-    const chat = await getChatById({ id });
+    // Skip database operations for now - just use in-memory messages
+    const chat = null; // await getChatById({ id });
     let messagesFromDb: DBMessage[] = [];
 
-    if (chat) {
-      if (chat.userId !== session.user.id) {
-        return new ChatSDKError("forbidden:chat").toResponse();
-      }
-      // Only fetch messages if chat already exists
-      messagesFromDb = await getMessagesByChatId({ id });
-    } else {
-      const title = await generateTitleFromUserMessage({
-        message,
-      });
+    // if (chat) {
+    //   if (chat.userId !== session.user.id) {
+    //     return new ChatSDKError("forbidden:chat").toResponse();
+    //   }
+    //   // Only fetch messages if chat already exists
+    //   messagesFromDb = await getMessagesByChatId({ id });
+    // } else {
+    //   const title = await generateTitleFromUserMessage({
+    //     message,
+    //   });
 
-      await saveChat({
-        id,
-        userId: session.user.id,
-        title,
-        visibility: selectedVisibilityType,
-      });
-      // New chat - no need to fetch messages, it's empty
-    }
+    //   await saveChat({
+    //     id,
+    //     userId: session.user.id,
+    //     title,
+    //     visibility: selectedVisibilityType,
+    //   });
+    //   // New chat - no need to fetch messages, it's empty
+    // }
 
     const uiMessages = [...convertToUIMessages(messagesFromDb), message];
 
@@ -159,21 +162,22 @@ export async function POST(request: Request) {
       country,
     };
 
-    await saveMessages({
-      messages: [
-        {
-          chatId: id,
-          id: message.id,
-          role: "user",
-          parts: message.parts,
-          attachments: [],
-          createdAt: new Date(),
-        },
-      ],
-    });
+    // Skip saving messages to database
+    // await saveMessages({
+    //   messages: [
+    //     {
+    //       chatId: id,
+    //       id: message.id,
+    //       role: "user",
+    //       parts: message.parts,
+    //       attachments: [],
+    //       createdAt: new Date(),
+    //     },
+    //   ],
+    // });
 
     const streamId = generateUUID();
-    await createStreamId({ streamId, chatId: id });
+    // await createStreamId({ streamId, chatId: id });
 
     let finalMergedUsage: AppUsage | undefined;
 
@@ -189,6 +193,7 @@ export async function POST(request: Request) {
               ? []
               : [
                   "getWeather",
+                  "webSearch",
                   "createDocument",
                   "updateDocument",
                   "requestSuggestions",
@@ -196,12 +201,13 @@ export async function POST(request: Request) {
           experimental_transform: smoothStream({ chunking: "word" }),
           tools: {
             getWeather,
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-            }),
+            webSearch,
+            // createDocument: createDocument({ session, dataStream }),
+            // updateDocument: updateDocument({ session, dataStream }),
+            // requestSuggestions: requestSuggestions({
+            //   session,
+            //   dataStream,
+            // }),
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
@@ -251,30 +257,31 @@ export async function POST(request: Request) {
       },
       generateId: generateUUID,
       onFinish: async ({ messages }) => {
-        await saveMessages({
-          messages: messages.map((currentMessage) => ({
-            id: currentMessage.id,
-            role: currentMessage.role,
-            parts: currentMessage.parts,
-            createdAt: new Date(),
-            attachments: [],
-            chatId: id,
-          })),
-        });
+        // Skip saving messages to database
+        // await saveMessages({
+        //   messages: messages.map((currentMessage) => ({
+        //     id: currentMessage.id,
+        //     role: currentMessage.role,
+        //     parts: currentMessage.parts,
+        //     createdAt: new Date(),
+        //     attachments: [],
+        //     chatId: id,
+        //   })),
+        // });
 
-        if (finalMergedUsage) {
-          try {
-            await updateChatLastContextById({
-              chatId: id,
-              context: finalMergedUsage,
-            });
-          } catch (err) {
-            console.warn("Unable to persist last usage for chat", id, err);
-          }
-        }
+        // if (finalMergedUsage) {
+        //   try {
+        //     await updateChatLastContextById({
+        //       chatId: id,
+        //       context: finalMergedUsage,
+        //     });
+        //   } catch (err) {
+        //     console.warn("Unable to persist last usage for chat", id, err);
+        //   }
+        // }
       },
       onError: () => {
-        return "Oops, an error occurred!";
+        return "Oops, en feil oppstod!";
       },
     });
 
