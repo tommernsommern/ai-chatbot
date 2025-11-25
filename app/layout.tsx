@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://chat.vercel.ai"),
   title: "Faktasjekkern",
   description: "Faktasjekkern - AI-assistent for faktasjekking.",
+  openGraph: {
+    title: "Faktasjekkern",
+    description: "Faktasjekkern - AI-assistent for faktasjekking.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Faktasjekkern",
+    description: "Faktasjekkern - AI-assistent for faktasjekking.",
+  },
 };
 
 export const viewport = {
